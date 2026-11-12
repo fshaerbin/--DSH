@@ -1,99 +1,15 @@
-/* 科技风个人网站 · 交互脚本 */
+/* 陈墨 · Mori Chen — 简洁大方的个人网站 · 交互脚本 */
 (function () {
   "use strict";
 
-  /* ---------- 背景粒子画布 ---------- */
-  var canvas = document.getElementById("bg-canvas");
-  var ctx = canvas.getContext("2d");
-  var particles = [];
-  var mouse = { x: null, y: null };
+  document.documentElement.classList.add("js");
+
   var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-
-  function randomParticle() {
-    return {
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      r: Math.random() * 1.8 + 0.4,
-      color: Math.random() > 0.5 ? "34,211,238" : "167,139,250"
-    };
-  }
-
-  function initParticles() {
-    particles = [];
-    var count = Math.min(90, Math.floor((canvas.width * canvas.height) / 16000));
-    for (var i = 0; i < count; i++) particles.push(randomParticle());
-  }
-
-  function drawParticles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (var i = 0; i < particles.length; i++) {
-      var p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(" + p.color + ",0.7)";
-      ctx.fill();
-
-      // 连线
-      for (var j = i + 1; j < particles.length; j++) {
-        var q = particles[j];
-        var dx = p.x - q.x;
-        var dy = p.y - q.y;
-        var dist = dx * dx + dy * dy;
-        if (dist < 12000) {
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(q.x, q.y);
-          ctx.strokeStyle = "rgba(99,120,255," + (0.14 * (1 - dist / 12000)) + ")";
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      }
-    }
-    requestAnimationFrame(drawParticles);
-  }
-
-  if (!reducedMotion) {
-    resizeCanvas();
-    initParticles();
-    drawParticles();
-    window.addEventListener("resize", function () {
-      resizeCanvas();
-      initParticles();
-    });
-  }
-
-  /* ---------- 打字机效果 ---------- */
-  var typedEl = document.querySelector(".typed");
-  if (typedEl && !reducedMotion) {
-    var text = typedEl.dataset.typed;
-    var idx = 0;
-    (function type() {
-      if (idx <= text.length) {
-        typedEl.textContent = text.slice(0, idx);
-        idx++;
-        setTimeout(type, 60);
-      }
-    })();
-  } else if (typedEl) {
-    typedEl.textContent = typedEl.dataset.typed;
-  }
-
-  /* ---------- 数字滚动 ---------- */
+  /* ---------- 数字滚动（首屏统计） ---------- */
   function animateCount(el) {
     var target = parseInt(el.dataset.count, 10);
-    var duration = 1200;
+    var duration = 1100;
     var start = null;
     function step(ts) {
       if (!start) start = ts;
@@ -106,30 +22,32 @@
     requestAnimationFrame(step);
   }
 
-  /* ---------- 滚动进入动画 ---------- */
-  document.querySelectorAll(".hero-stats .stat-num").forEach(function (el) {
-    if (reducedMotion) {
-      el.textContent = el.dataset.count;
-    } else {
+  var statNums = document.querySelectorAll(".hero-stats .stat-num");
+  if (reducedMotion) {
+    statNums.forEach(function (el) { el.textContent = el.dataset.count; });
+  } else {
+    statNums.forEach(function (el) {
+      el.textContent = "0";
       animateCount(el);
-    }
-  });
+    });
+  }
 
+  /* ---------- 滚动进入动画 ---------- */
   var observer = new IntersectionObserver(
     function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
           entry.target.classList.add("visible");
-          entry.target.querySelectorAll(".stat-num").forEach(animateCount);
           observer.unobserve(entry.target);
         }
       });
     },
-    { threshold: 0.15 }
+    { threshold: 0.12 }
   );
 
   document.querySelectorAll(".reveal").forEach(function (el) {
-    observer.observe(el);
+    if (reducedMotion) el.classList.add("visible");
+    else observer.observe(el);
   });
 
   /* ---------- 移动端导航 ---------- */
